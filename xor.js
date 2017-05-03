@@ -2,7 +2,7 @@ const learningRatio = 0.001;
 const minCorrect = 4;
 const maxEpochs = 100000;
 const operator = 'xor';
-const activationFunction = 'sigmoid';
+const activationFunction = 'relu';
 
 function start() {
 	//create network topology
