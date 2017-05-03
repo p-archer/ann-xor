@@ -1,9 +1,25 @@
 const learningRatio = 0.001;
 const minCorrect = 4;
-const maxEpochs = 10000;
+const maxEpochs = 100000;
 const operator = 'xor';
+const activationFunction = 'sigmoid';
 
-function teach(network) {
+function start() {
+	//create network topology
+	let topology = [
+		[{bias: 1}, {bias: 1}, {bias: 1}, {bias: 1}],
+		// [{bias: 0}, {bias: 1}],
+		[{bias: 0}]
+	];
+	// let topology = [[{bias: 1}]];
+	let inputCount = 2;
+	let network = createNetwork(topology, inputCount);
+	show(network);
+
+	train(network);
+}
+
+function train(network) {
 	let logArray = [];
 	let epochCount = 0;
 	let consecutiveCorrect = 0;
@@ -32,7 +48,6 @@ function teach(network) {
 
 		//learn
 		let error = output - result;
-		// console.log('res', result, '('+resultArray[resultArray.length-1][0]+') ', 'expected', output, 'error', error);
 		learn(network, resultArray.slice(), error);
 
 		if (error === 0) {
@@ -43,7 +58,7 @@ function teach(network) {
 
 		//log
 		logArray.push(resultArray);
-		if (logArray.length > 3) {
+		while (logArray.length > 4) {
 			logArray.shift();
 		}
 
@@ -53,7 +68,11 @@ function teach(network) {
 	console.log();
 	console.log('finished in', epochCount, 'epochs');
 	for (let i=0; i<logArray.length; i++) {
-		console.log('epoch', epochCount-logArray.length+i, 'res', logArray[i]);
+		let inputArray = [];
+		for (let j=0; j<logArray[i].length; j++) {
+			inputArray.push(logArray[i][j]);
+		}
+		console.log('epoch', epochCount-logArray.length+1+i, 'res', inputArray.join(', '));
 	}
 	show(network);
 }
@@ -97,9 +116,15 @@ function process(net, input) {
 				sig += inputVector[k] * neuron.weights[k];
 			}
 
-			// sig = Math.round(sig);
-			// sig = 1/(1+Math.exp(-sig));
-			sig = sig > 0 ? sig : 0;
+			switch (activationFunction.toLowerCase()) {
+			case 'linear':
+			case 'perceptron': sig = sig > 0.5 ? 1 : 0; break;
+			case 'sigmoid':
+			case 'logistic': sig = 1 / (1 + Math.exp(-sig)); break;
+			case 'rectified':
+			case 'relu': sig = sig > 0 ? sig : 0; break;
+			default: throw('unknown activation function');
+			}
 
 			outputs[i+1].push(sig);
 		}
@@ -116,32 +141,12 @@ function learn(net, inputs, error) {
 				let neuron = layer[j];
 				let inputVector = inputs[i].slice();
 				inputVector.push(neuron.bias);
-				// console.log('inputs', inputVector, 'error', error);
-				// console.log('original weights', neuron.weights);
 				for (let k=0; k<neuron.weights.length; k++) {
 					neuron.weights[k] += inputVector[k] * error * learningRatio;
 				}
-				// console.log('new weights', neuron.weights);
 			}
 		}
-	} else {
-		// console.log('nothing to learn');
 	}
-}
-
-function start() {
-	//create network topology
-	let topology = [
-		// [{bias: 1}, {bias: 1}, {bias: 1}, {bias: 1}],
-		[{bias: 0}, {bias: 1}],
-		[{bias: 0}]
-	];
-	// let topology = [[{bias: 1}]];
-	let inputCount = 2;
-	let network = createNetwork(topology, inputCount);
-	show(network);
-
-	teach(network);
 }
 
 function show(network) {
@@ -149,9 +154,11 @@ function show(network) {
 		console.log('layer', i);
 		for (let j=0; j<network[i].length; j++) {
 			console.log('\tneuron', j, 'bias', network[i][j].bias);
+			let weights = [];
 			for (let k=0; k<network[i][j].weights.length; k++) {
-				console.log('\t\t', network[i][j].weights[k]);
+				weights.push(network[i][j].weights[k].toFixed(4));
 			}
+			console.log('\t\t', weights.join(', '));
 		}
 	}
 }
